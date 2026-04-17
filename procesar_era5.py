@@ -6,88 +6,89 @@ import geopandas as gpd
 import rioxarray
 from shapely.geometry import mapping
 
+# =========================
 # Rutas
-NC_PATH = r"C:\Users\tatia\OneDrive\Escritorio\proyecto_miad\data_era5_land\era5_land_mensual_2007_2024.nc"
+# =========================
+NC_PATH_CLIMA = r"C:\Users\tatia\OneDrive\Escritorio\proyecto_miad\data_era5_land\era5_land_mensual_2007_2024.nc"
+NC_PATH_SUELO = r"C:\Users\tatia\OneDrive\Escritorio\proyecto_miad\data_era5_land\era5_land_suelo_2007_2024.nc"
 SHP_PATH = r"C:\Users\tatia\OneDrive\Escritorio\proyecto_miad\data_municipios\MGN_MPIO_POLITICO.shp"
 OUT_CSV = r"C:\Users\tatia\OneDrive\Escritorio\proyecto_miad\data_clima\clima_anual_municipio.csv"
 
+# =========================
 # Leer municipios
+# =========================
 gdf = gpd.read_file(SHP_PATH)
 
 DEPTO = "DPTO_CNMBR"
 MPIO = "MPIO_CNMBR"
 COD = "MPIO_CCDGO"
 
-departamentos = [
-    "ANTIOQUIA",
-    "NORTE DE SANTANDER",
-    "META",
-    "HUILA",
-    "CUNDINAMARCA",
-    "CESAR",
-    "SANTANDER",
-    "CALDAS",
-    "CASANARE",
-    "NARIÑO",
-    "VALLE DEL CAUCA",
-    "CAUCA",
-    "BOYACA",
-    "TOLIMA",
-    "RISARALDA",
-    "MAGDALENA",
-    "QUINDIO",
-    "LA GUAJIRA",
-    "CAQUETA",
-    "CHOCO",
-    "SUCRE",
-    "GUAVIARE",
-    "CORDOBA",
-    "PUTUMAYO",
-    "BOLIVAR",
-    "ARAUCA"
-]
-
 gdf = gdf.to_crs("EPSG:4326")
-gdf = gdf[gdf[DEPTO].str.strip().str.upper().isin(departamentos)].copy()
 
-print("Municipios filtrados:", len(gdf))
+print("Total municipios:", len(gdf))
 print(gdf[[DEPTO, MPIO, COD]].head())
 
-# Leer NETCDF
-ds = xr.open_dataset(NC_PATH)
+# =========================
+# Leer NETCDFs
+# =========================
+ds_clima = xr.open_dataset(NC_PATH_CLIMA)
+ds_suelo = xr.open_dataset(NC_PATH_SUELO)
 
-print("Variables del netcdf:")
+print("Variables clima:", list(ds_clima.data_vars))
+print("Variables suelo:", list(ds_suelo.data_vars))
+
+# =========================
+# Renombrar dimensiones espaciales
+# =========================
+def ajustar_coords(ds):
+    rename_dict = {}
+    if "longitude" in ds.coords:
+        rename_dict["longitude"] = "x"
+    if "latitude" in ds.coords:
+        rename_dict["latitude"] = "y"
+    if rename_dict:
+        ds = ds.rename(rename_dict)
+
+    ds = ds.rio.write_crs("EPSG:4326")
+    ds = ds.rio.set_spatial_dims(x_dim="x", y_dim="y")
+    return ds
+
+ds_clima = ajustar_coords(ds_clima)
+ds_suelo = ajustar_coords(ds_suelo)
+
+# =========================
+# Unir datasets
+# =========================
+ds = xr.merge([ds_clima, ds_suelo], compat="override")
+
+print("Variables combinadas:")
 print(list(ds.data_vars))
 
-print("Coordenadas del netcdf:")
-print(list(ds.coords))
-print(ds)
+# =========================
+# Función para detectar nombres
+# =========================
+def encontrar_variable(ds, candidatos, nombre_amigable):
+    for var in candidatos:
+        if var in ds.data_vars:
+            print(f"{nombre_amigable}: usando '{var}'")
+            return var
+    raise ValueError(
+        f"No se encontró la variable para {nombre_amigable}. "
+        f"Candidatas probadas: {candidatos}. "
+        f"Variables disponibles: {list(ds.data_vars)}"
+    )
 
-# Renombrar dimensiones/coordenadas espaciales
-rename_dict = {}
-if "longitude" in ds.coords:
-    rename_dict["longitude"] = "x"
-if "latitude" in ds.coords:
-    rename_dict["latitude"] = "y"
+tp_var = encontrar_variable(ds, ["tp", "total_precipitation"], "Precipitación")
+t2m_var = encontrar_variable(ds, ["t2m", "2m_temperature"], "Temperatura 2m")
+d2m_var = encontrar_variable(ds, ["d2m", "2m_dewpoint_temperature"], "Punto de rocío 2m")
+ssrd_var = encontrar_variable(ds, ["ssrd", "surface_solar_radiation_downwards"], "Radiación solar")
+swvl1_var = encontrar_variable(ds, ["swvl1", "volumetric_soil_water_layer_1"], "Humedad suelo capa 1")
+swvl2_var = encontrar_variable(ds, ["swvl2", "volumetric_soil_water_layer_2"], "Humedad suelo capa 2")
+pev_var = encontrar_variable(ds, ["pev", "potential_evaporation"], "Evaporación potencial")
 
-if rename_dict:
-    ds = ds.rename(rename_dict)
-
-# Definir CRS y dimensiones espaciales
-ds = ds.rio.write_crs("EPSG:4326")
-ds = ds.rio.set_spatial_dims(x_dim="x", y_dim="y")
-
-print("Coordenadas después del ajuste:")
-print(list(ds.coords))
-print(ds)
-
-# Identificar variables
-tp_var = "tp"
-t2m_var = "t2m"
-d2m_var = "d2m"
-ssrd_var = "ssrd"
-
+# =========================
 # Identificar tiempo
+# =========================
 if "time" in ds.coords:
     time_name = "time"
 elif "valid_time" in ds.coords:
@@ -99,7 +100,9 @@ else:
 
 print("Coordenada temporal detectada:", time_name)
 
-# Funciones
+# =========================
+# Funciones auxiliares
+# =========================
 def kelvin_a_celsius(x):
     return x - 273.15
 
@@ -114,7 +117,9 @@ def humedad_relativa(t_c, td_c):
 def dias_del_mes(t):
     return calendar.monthrange(int(t.year), int(t.month))[1]
 
+# =========================
 # Conversiones
+# =========================
 ds["t2m_c"] = kelvin_a_celsius(ds[t2m_var])
 ds["d2m_c"] = kelvin_a_celsius(ds[d2m_var])
 
@@ -131,13 +136,18 @@ dias = xr.DataArray(
     coords={time_name: ds[time_name].values},
 )
 
-# Precipitación mensual en mm
+# Precipitación mensual en mm/mes
 ds["precip_mm_mes"] = ds[tp_var] * 1000.0 * dias
 
-# Radiación mensual
+# Radiación mensual en MJ/m²/mes
 ds["rad_mes"] = (ds[ssrd_var] * dias) / 1_000_000
 
+# Evaporación potencial en mm/mes
+ds["pev_mm_mes"] = np.abs(ds[pev_var]) * 1000.0 * dias
+
+# =========================
 # Promedio por municipio
+# =========================
 resultados = []
 
 for _, row in gdf.iterrows():
@@ -156,6 +166,9 @@ for _, row in gdf.iterrows():
             "temperatura_mensual": clip_ds["t2m_c"].mean(dim=("y", "x"), skipna=True).values,
             "humedad_relativa_mensual": clip_ds["rh"].mean(dim=("y", "x"), skipna=True).values,
             "radiacion_mensual": clip_ds["rad_mes"].mean(dim=("y", "x"), skipna=True).values,
+            "humedad_suelo_capa_1_mensual": clip_ds[swvl1_var].mean(dim=("y", "x"), skipna=True).values,
+            "humedad_suelo_capa_2_mensual": clip_ds[swvl2_var].mean(dim=("y", "x"), skipna=True).values,
+            "evaporacion_potencial_mensual": clip_ds["pev_mm_mes"].mean(dim=("y", "x"), skipna=True).values,
         })
 
         df_mpio["departamento"] = row[DEPTO]
@@ -174,7 +187,9 @@ if len(resultados) == 0:
 
 df_mensual = pd.concat(resultados, ignore_index=True)
 
+# =========================
 # Agregación anual
+# =========================
 df_anual = (
     df_mensual
     .groupby(["departamento", "municipio", "cod_mpio", "anio"], as_index=False)
@@ -185,6 +200,9 @@ df_anual = (
         temperatura_mensual_min=("temperatura_mensual", "min"),
         humedad_relativa_mensual_mean=("humedad_relativa_mensual", "mean"),
         radiacion_mensual_sum=("radiacion_mensual", "sum"),
+        humedad_suelo_capa_1_mensual_mean=("humedad_suelo_capa_1_mensual", "mean"),
+        humedad_suelo_capa_2_mensual_mean=("humedad_suelo_capa_2_mensual", "mean"),
+        evaporacion_potencial_mensual_sum=("evaporacion_potencial_mensual", "sum"),
     )
     .rename(columns={
         "precip_mensual_sum": "Precipitación acumulada anual (mm/año)",
@@ -193,11 +211,15 @@ df_anual = (
         "temperatura_mensual_min": "Mínimo de la temperatura media mensual (°C)",
         "humedad_relativa_mensual_mean": "Humedad relativa media anual (%)",
         "radiacion_mensual_sum": "Radiación solar acumulada anual (MJ/m²/año)",
+        "humedad_suelo_capa_1_mensual_mean": "Humedad volumétrica media anual del suelo capa 1 (m³/m³)",
+        "humedad_suelo_capa_2_mensual_mean": "Humedad volumétrica media anual del suelo capa 2 (m³/m³)",
+        "evaporacion_potencial_mensual_sum": "Evaporación potencial acumulada anual (mm/año)",
     })
 )
 
-# Exportar CSV
 df_anual.to_csv(OUT_CSV, index=False, encoding="utf-8-sig")
 
 print(f"Archivo exportado en: {OUT_CSV}")
 print(df_anual.head())
+print(df_anual.columns.tolist())
+

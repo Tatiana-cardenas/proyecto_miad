@@ -78,7 +78,10 @@ df_clima_final = df_clima[[
     "Máximo de la temperatura media mensual (°C)",
     "Mínimo de la temperatura media mensual (°C)",
     "Humedad relativa media anual (%)",
-    "Radiación solar acumulada anual (MJ/m²/año)"
+    "Radiación solar acumulada anual (MJ/m²/año)",
+    "Humedad volumétrica media anual del suelo capa 1 (m³/m³)",
+    "Humedad volumétrica media anual del suelo capa 2 (m³/m³)",
+    "Evaporación potencial acumulada anual (mm/año)"
 ]].copy()
 
 df_altitud_final = df_altitud[[
@@ -131,13 +134,15 @@ print(faltantes)
 
 # Eliminar filas que tengan faltantes en las variables clave
 df_base_final = df_base_final.dropna(subset=[
+    "Precipitación acumulada anual (mm/año)",
     "Temperatura media anual (°C)",
     "Máximo de la temperatura media mensual (°C)",
     "Mínimo de la temperatura media mensual (°C)",
     "Humedad relativa media anual (%)",
     "Radiación solar acumulada anual (MJ/m²/año)",
-    "Precipitación acumulada anual (mm/año)",
-    "altitud_media_m"
+    "Humedad volumétrica media anual del suelo capa 1 (m³/m³)",
+    "Humedad volumétrica media anual del suelo capa 2 (m³/m³)",
+    "Evaporación potencial acumulada anual (mm/año)"
 ])
 
 # Verificar
