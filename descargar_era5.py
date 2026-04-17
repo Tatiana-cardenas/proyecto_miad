@@ -30,7 +30,7 @@ request = {
     "time": ["00:00"],
     "data_format": "netcdf",
     "download_format": "unarchived",
-    "area": [6.5, -79.5, -2.0, -72.5]
+    "area": [16, -82, -5, -66]
 }
 
 carpeta_salida = os.path.join("datos_era5_land")

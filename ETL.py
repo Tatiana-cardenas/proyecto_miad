@@ -2,17 +2,19 @@
 import pandas as pd
 import unicodedata
 import re
+import os
 
 # Cargar los datos
-df_rendimientos_cundinamarca = pd.read_csv('Rendimientos Cundinamarca 2007-2024.csv')
-df_rendimientos_narino = pd.read_csv('Rendimientos Nariño 2007-2024.csv')
-df_clima=pd.read_csv('clima_anual_municipio.csv')
+BASE_DIR = '.'
 
-# Unir los dos dataframes de rendimientos
-df_rendimientos = pd.concat(
-    [df_rendimientos_cundinamarca, df_rendimientos_narino],
-    ignore_index=True
-)
+ruta_rend = os.path.join(BASE_DIR, 'data_rendimientos', 'rendimiento_municipios_2007_2024.csv')
+ruta_clima = os.path.join(BASE_DIR, 'data_clima', 'clima_anual_municipio.csv')
+ruta_altitud = os.path.join(BASE_DIR, 'data_altitud', 'altitud_municipios.csv')
+
+df_rendimientos = pd.read_csv(ruta_rend)
+df_clima = pd.read_csv(ruta_clima)
+df_altitud = pd.read_csv(ruta_altitud)
+
 
 # función limpieza
 def limpiar_municipio(valor):
@@ -34,18 +36,23 @@ def limpiar_municipio(valor):
     
     return valor
 
-print(df_rendimientos.head())
-print(df_clima.head())
-
 # Limpiar columna departamento y municipio
 df_rendimientos["Departamento"] = df_rendimientos["Departamento"].apply(limpiar_municipio)
 df_rendimientos["Municipio"] = df_rendimientos["Municipio"].apply(limpiar_municipio)
 df_clima["departamento"] = df_clima["departamento"].apply(limpiar_municipio)
 df_clima["municipio"] = df_clima["municipio"].apply(limpiar_municipio)
+df_altitud["departamento"] = df_altitud["departamento"].apply(limpiar_municipio)
+df_altitud["municipio"] = df_altitud["municipio"].apply(limpiar_municipio)
 
 #  Renombrar columnas para unificar
 df_clima = df_clima.rename(columns={
     "anio": "Año",
+    "departamento": "Departamento",
+    "municipio": "Municipio",
+
+})
+
+df_altitud = df_altitud.rename(columns={
     "departamento": "Departamento",
     "municipio": "Municipio",
 
@@ -68,81 +75,73 @@ df_clima_final = df_clima[[
     "Año",
     "Precipitación acumulada anual (mm/año)",
     "Temperatura media anual (°C)",
+    "Máximo de la temperatura media mensual (°C)",
+    "Mínimo de la temperatura media mensual (°C)",
     "Humedad relativa media anual (%)",
     "Radiación solar acumulada anual (MJ/m²/año)"
 ]].copy()
 
+df_altitud_final = df_altitud[[
+    "Departamento",
+    "Municipio",
+    "altitud_media_m"
+]].copy()
+
 
 homologacion = {
-    "EL TABLON": "EL TABLON DE GOMEZ",
-    "TUMACO": "SAN ANDRES DE TUMACO"
+    "DON MATIAS": "DONMATIAS",
+    "CARMEN DE VIBORAL": "EL CARMEN DE VIBORAL",
+    "PUEBLO RICO": "PUEBLORRICO",
+    "SAN VICENTE": "SAN VICENTE FERRER",
+    "SANTAFE DE ANTIOQUIA": "SANTA FE DE ANTIOQUIA",
+    "MONTANITA": "LA MONTANITA",
+    "PIENDAMO": "PIENDAMO TUNIA",
+    "CARMEN DEL ATRATO": "EL CARMEN DE ATRATO",
+    "HATO NUEVO": "HATONUEVO",
+    "LA URIBE": "URIBE",
+    "VISTA HERMOSA": "VISTAHERMOSA",
+    "DOS QUEBRADAS": "DOSQUEBRADAS",
+    "ARMERO GUAYABAL": "ARMERO",
+    "CAROLINA": "CAROLINA DEL PRINCIPE"
+
 }
 
-df_rendimientos_final["Municipio"] = df_rendimientos["Municipio"].replace(homologacion)
+df_rendimientos_final["Municipio"] = df_rendimientos_final["Municipio"].replace(homologacion)
+df_clima_final["Municipio"] = df_clima_final["Municipio"].replace(homologacion)
+df_altitud_final["Municipio"] = df_altitud_final["Municipio"].replace(homologacion)
 
 
-print(
-    sorted(set(df_rendimientos_final["Municipio"]) - set(df_clima_final["Municipio"]))
-)
-
-# Unir df rendimientos y clima
+# Unir df rendimientos, clima y altitud
 df_base_final = df_rendimientos_final.merge(
     df_clima_final,
     on=["Departamento", "Municipio", "Año"],
     how="left"
-)
-
-# Columnas climáticas
-cols_clima = [
-    "Precipitación acumulada anual (mm/año)",
-    "Temperatura media anual (°C)",
-    "Humedad relativa media anual (%)",
-    "Radiación solar acumulada anual (MJ/m²/año)"
-]
-
-# Filas sin información climática
-sin_clima = df_base_final[df_base_final[cols_clima].isna().all(axis=1)].copy()
-
-# Contar combinaciones únicas departamento-municipio-año sin clima
-faltantes_unicos = (
-    sin_clima[["Departamento", "Municipio"]]
-    .drop_duplicates()
-    .sort_values(["Departamento", "Municipio"])
-)
-
-print("Cantidad de combinaciones Departamento Municipio sin información climática:")
-print(faltantes_unicos.shape[0])
-
-df_base_final = df_base_final[~df_base_final[cols_clima].isna().all(axis=1)]
-
-# Filtrar años 2015-2023
-df_base_final = df_base_final[
-    (df_base_final["Año"] >= 2015) & (df_base_final["Año"] <= 2023)
-]
-
-# Calcular producción total por municipio dentro de cada departamento
-top5_productores = (
-    df_base_final
-    .groupby(["Departamento", "Municipio"], as_index=False)["Producción"]
-    .sum()
-)
-
-# Quedarse con los 5 mayores productores por departamento
-top5_productores = (
-    top5_productores
-    .sort_values(["Departamento", "Producción"], ascending=[True, False])
-    .groupby("Departamento")
-    .head(5)
-)
-
-# Filtrar la base original solo con esos municipios
-df_base_final_top5 = df_base_final.merge(
-    top5_productores[["Departamento", "Municipio"]],
+).merge(
+    df_altitud_final,
     on=["Departamento", "Municipio"],
-    how="inner"
+    how="left"
 )
 
-print(top5_productores)
+print(df_base_final.shape)
 
-# Exportar base final a CSV
+# Mostrar cantidad de datos faltantes por columna
+faltantes = df_base_final.isna().sum().sort_values(ascending=False)
+print("Datos faltantes por columna:")
+print(faltantes)
+
+# Eliminar filas que tengan faltantes en las variables clave
+df_base_final = df_base_final.dropna(subset=[
+    "Temperatura media anual (°C)",
+    "Máximo de la temperatura media mensual (°C)",
+    "Mínimo de la temperatura media mensual (°C)",
+    "Humedad relativa media anual (%)",
+    "Radiación solar acumulada anual (MJ/m²/año)",
+    "Precipitación acumulada anual (mm/año)",
+    "altitud_media_m"
+])
+
+# Verificar
+print(df_base_final.isna().sum())
+print(df_base_final.shape)
+
 df_base_final.to_csv("base_final.csv", index=False, encoding="utf-8-sig")
