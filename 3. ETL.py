@@ -88,7 +88,11 @@ df_clima_final = df_clima[[
     "SPI12_meses_bajo_m1",
     "SPI3_dic",
     "SPI6_dic",
-    "SPI12_dic"
+    "SPI12_dic",
+    "SPI1_floracion",
+    "SPI3_floracion",
+    "SPI1_llenado",
+    "SPI3_llenado"
 ]].copy()
 
 df_altitud_final = df_altitud[[

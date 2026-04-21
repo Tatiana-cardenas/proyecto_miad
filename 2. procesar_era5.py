@@ -204,7 +204,7 @@ for col in cols_numericas:
 
 df_mensual["precip_mensual"] = df_mensual["precip_mensual"].clip(lower=0)
 
-# 12. SPI robusto
+# 12. SPI
 def spi_referencia(fecha, precipitacion):
     return pd.DataFrame({
         "fecha": pd.to_datetime(fecha),
@@ -333,18 +333,20 @@ def calcular_spi_por_municipio(grupo):
     res = spi_indice(
         fecha=grupo["time"],
         precipitacion=grupo["precip_mensual"],
-        escalas=[3, 6, 12],
+        escalas=[1, 3, 6, 12],
         referencia=referencia,
         distribucion="Gamma"
     )
 
     res = res.pivot(index="fecha", columns="escala", values="spi").reset_index()
     res = res.rename(columns={
+        1: "SPI_1",
         3: "SPI_3",
         6: "SPI_6",
         12: "SPI_12"
     })
 
+    grupo["precip_acum_1"] = grupo["precip_mensual"]
     grupo["precip_acum_3"] = grupo["precip_mensual"].rolling(window=3, min_periods=3).sum()
     grupo["precip_acum_6"] = grupo["precip_mensual"].rolling(window=6, min_periods=6).sum()
     grupo["precip_acum_12"] = grupo["precip_mensual"].rolling(window=12, min_periods=12).sum()
@@ -389,7 +391,105 @@ df_spi_dic = (
     })
 )
 
-# 15. Agregación anual clima
+# 15. SPI fenológico
+def construir_spi_fenologico(df):
+    df = df.copy()
+    df["departamento_norm"] = df["departamento"].astype(str).str.upper().str.strip()
+
+    resultados = []
+
+    for (departamento, municipio, cod_mpio), grupo in df.groupby(
+        ["departamento", "municipio", "cod_mpio"]
+    ):
+        grupo = grupo.sort_values("time").copy()
+        depto_norm = str(departamento).upper().strip()
+
+        filas_salida = []
+
+        for anio, g_anio in grupo.groupby("anio"):
+            spi1_flor = np.nan
+            spi3_flor = np.nan
+            spi1_llen = np.nan
+            spi3_llen = np.nan
+
+            if depto_norm in ["NARIÑO", "NARINO"]:
+                flor = g_anio[g_anio["mes"].isin([9, 10])]
+                if not flor.empty:
+                    spi1_flor = flor["SPI_1"].mean()
+                    spi3_flor = flor["SPI_3"].mean()
+
+                llen = g_anio[g_anio["mes"] == 12]
+                if not llen.empty:
+                    spi1_llen = llen["SPI_1"].mean()
+                    spi3_llen = llen["SPI_3"].mean()
+
+            elif depto_norm == "CUNDINAMARCA":
+                flor_1 = g_anio[g_anio["mes"].isin([2, 3])]
+                flor_2 = g_anio[g_anio["mes"].isin([8, 9])]
+
+                valores_spi1_flor = []
+                valores_spi3_flor = []
+
+                if not flor_1.empty:
+                    valores_spi1_flor.append(flor_1["SPI_1"].mean())
+                    valores_spi3_flor.append(flor_1["SPI_3"].mean())
+
+                if not flor_2.empty:
+                    valores_spi1_flor.append(flor_2["SPI_1"].mean())
+                    valores_spi3_flor.append(flor_2["SPI_3"].mean())
+
+                if len(valores_spi1_flor) > 0:
+                    spi1_flor = np.mean(valores_spi1_flor)
+                if len(valores_spi3_flor) > 0:
+                    spi3_flor = np.mean(valores_spi3_flor)
+
+                llen_1 = g_anio[g_anio["mes"].isin([4, 5, 6, 7])]
+                llen_2 = g_anio[g_anio["mes"] == 12]
+
+                valores_spi1_llen = []
+                valores_spi3_llen = []
+
+                if not llen_1.empty:
+                    valores_spi1_llen.append(llen_1["SPI_1"].mean())
+                    valores_spi3_llen.append(llen_1["SPI_3"].mean())
+
+                if not llen_2.empty:
+                    valores_spi1_llen.append(llen_2["SPI_1"].mean())
+                    valores_spi3_llen.append(llen_2["SPI_3"].mean())
+
+                if len(valores_spi1_llen) > 0:
+                    spi1_llen = np.mean(valores_spi1_llen)
+                if len(valores_spi3_llen) > 0:
+                    spi3_llen = np.mean(valores_spi3_llen)
+
+            filas_salida.append({
+                "departamento": departamento,
+                "municipio": municipio,
+                "cod_mpio": cod_mpio,
+                "anio": anio,
+                "SPI1_floracion": spi1_flor,
+                "SPI3_floracion": spi3_flor,
+                "SPI1_llenado": spi1_llen,
+                "SPI3_llenado": spi3_llen,
+            })
+
+        resultados.append(pd.DataFrame(filas_salida))
+
+    if len(resultados) == 0:
+        return pd.DataFrame(
+            columns=[
+                "departamento", "municipio", "cod_mpio", "anio",
+                "SPI1_floracion", "SPI3_floracion",
+                "SPI1_llenado", "SPI3_llenado"
+            ]
+        )
+
+    return pd.concat(resultados, ignore_index=True)
+
+# 16. Construir SPI fenológico
+df_spi_fenologico = construir_spi_fenologico(df_mensual)
+
+# 17. Agregación anual clima
 df_anual = (
     df_mensual
     .groupby(["departamento", "municipio", "cod_mpio", "anio"], as_index=False)
@@ -417,7 +517,7 @@ df_anual = (
     })
 )
 
-# 16. Unir clima anual + SPI anual
+# 18. Unir clima anual + SPI anual
 df_anual = df_anual.merge(
     df_spi_anual,
     on=["departamento", "municipio", "cod_mpio", "anio"],
@@ -430,5 +530,17 @@ df_anual = df_anual.merge(
     how="left"
 )
 
-# 17. Exportar
+# 19. Unir SPI fenológico
+df_anual = df_anual.merge(
+    df_spi_fenologico,
+    on=["departamento", "municipio", "cod_mpio", "anio"],
+    how="left"
+)
+
+# 20. Exportar
 df_anual.to_csv(OUT_CSV_ANUAL, index=False, encoding="utf-8-sig")
+
+print("Archivo exportado correctamente en:")
+print(OUT_CSV_ANUAL)
+print("\nColumnas SPI fenológicas agregadas:")
+print(["SPI1_floracion", "SPI3_floracion", "SPI1_llenado", "SPI3_llenado"])
