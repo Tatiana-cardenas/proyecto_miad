@@ -1,0 +1,14 @@
+[
+    "Precipitación acumulada anual (mm/año)",
+    "Temperatura media anual (°C)",
+    "Máximo de la temperatura media mensual (°C)",
+    "Mínimo de la temperatura media mensual (°C)",
+    "Humedad relativa media anual (%)",
+    "Radiación solar acumulada anual (MJ/m²/año)",
+    "altitud_media_m",
+    "SPI1_floracion",
+    "SPI1_llenado",
+    "Rendimiento_lag1",
+    "Departamento",
+    "Municipio"
+]
