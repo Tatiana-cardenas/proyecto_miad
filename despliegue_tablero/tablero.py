@@ -147,7 +147,15 @@ st.markdown(
             box-shadow: 0 2px 8px rgba(0,0,0,0.06) !important;
             padding: 22px 24px 18px 24px !important;
             margin-bottom: 22px !important;
-            min-height: 560px !important;
+            min-height: 660px !important;
+        }
+
+        .st-key-comportamiento_historico {
+            overflow-x: auto !important;
+            overflow-y: visible !important;
+        }
+
+        .st-key-regla_activacion {
             overflow: hidden !important;
         }
 
@@ -159,6 +167,26 @@ st.markdown(
         .st-key-comportamiento_historico div[data-baseweb="select"] > div {
             background-color: #ffffff !important;
             color: #000000 !important;
+        }
+
+        .st-key-comportamiento_historico div[data-testid="stVegaLiteChart"] {
+            width: 100% !important;
+            min-width: 100% !important;
+            overflow-x: auto !important;
+            overflow-y: visible !important;
+        }
+
+        .st-key-comportamiento_historico div[data-testid="stVegaLiteChart"] > div {
+            width: 100% !important;
+            min-width: 100% !important;
+            overflow-x: auto !important;
+            overflow-y: visible !important;
+        }
+
+        .st-key-comportamiento_historico canvas,
+        .st-key-comportamiento_historico svg {
+            max-width: none !important;
+            overflow: visible !important;
         }
 
         .st-key-simulador_seguro {
@@ -1054,11 +1082,21 @@ with col_hist:
             df_grafica["Año"] = df_grafica["Año"].astype(str)
             df_prediccion["Año"] = df_prediccion["Año"].astype(str)
 
+            eje_x = alt.X(
+                "Año:O",
+                title=None,
+                axis=alt.Axis(
+                    labelAngle=-45,
+                    labelOverlap=False,
+                    labelLimit=80
+                )
+            )
+
             chart_lineas = alt.Chart(df_grafica).mark_line(
                 point=True,
                 strokeWidth=4
             ).encode(
-                x=alt.X("Año:O", title=None, axis=alt.Axis(labelAngle=0)),
+                x=eje_x,
                 y=alt.Y("Valor:Q", title="Rendimiento (%)"),
                 color=alt.Color(
                     "Serie:N",
@@ -1085,7 +1123,7 @@ with col_hist:
                 shape="diamond",
                 filled=True
             ).encode(
-                x=alt.X("Año:O"),
+                x=eje_x,
                 y=alt.Y("Valor:Q"),
                 color=alt.Color(
                     "Serie:N",
@@ -1110,7 +1148,8 @@ with col_hist:
             chart_variable = (
                 chart_lineas + punto_prediccion
             ).properties(
-                height=270,
+                width="container",
+                height=380,
                 background="#ffffff"
             ).configure_view(
                 fill="#ffffff",
@@ -1169,11 +1208,21 @@ with col_hist:
             elif variable_seleccionada == "Radiación solar acumulada anual (MJ/m²/año)":
                 titulo_variable = "Radiación solar acumulada anual"
 
+            eje_x = alt.X(
+                "Año:O",
+                title=None,
+                axis=alt.Axis(
+                    labelAngle=-45,
+                    labelOverlap=False,
+                    labelLimit=80
+                )
+            )
+
             chart_variable = alt.Chart(df_grafica).mark_line(
                 point=True,
                 strokeWidth=4
             ).encode(
-                x=alt.X("Año:O", title=None, axis=alt.Axis(labelAngle=0)),
+                x=eje_x,
                 y=alt.Y("Valor:Q", title=titulo_variable),
                 color=alt.Color(
                     "Serie:N",
@@ -1194,7 +1243,8 @@ with col_hist:
                     alt.Tooltip("Valor:Q", title="Valor", format=".2f")
                 ]
             ).properties(
-                height=270,
+                width="container",
+                height=380,
                 background="#ffffff"
             ).configure_view(
                 fill="#ffffff",
