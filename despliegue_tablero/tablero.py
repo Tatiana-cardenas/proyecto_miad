@@ -147,45 +147,49 @@ st.markdown(
             box-shadow: 0 2px 8px rgba(0,0,0,0.06) !important;
             padding: 22px 24px 18px 24px !important;
             margin-bottom: 22px !important;
-            min-height: 660px !important;
-        }
-
-        .st-key-comportamiento_historico {
-            overflow-x: auto !important;
-            overflow-y: visible !important;
-        }
-
-        .st-key-regla_activacion {
+            min-height: auto !important;
+            max-width: 100% !important;
+            box-sizing: border-box !important;
             overflow: hidden !important;
         }
 
         .st-key-comportamiento_historico div,
         .st-key-regla_activacion div {
-            background-color: transparent !important;
+            box-sizing: border-box !important;
+        }
+
+        .st-key-comportamiento_historico [data-testid="stSelectbox"],
+        .st-key-comportamiento_historico [data-testid="stVegaLiteChart"],
+        .st-key-comportamiento_historico div[data-baseweb="select"] {
+            max-width: 100% !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
         }
 
         .st-key-comportamiento_historico div[data-baseweb="select"] > div {
             background-color: #ffffff !important;
             color: #000000 !important;
+            max-width: 100% !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
         }
 
         .st-key-comportamiento_historico div[data-testid="stVegaLiteChart"] {
+            max-width: 100% !important;
             width: 100% !important;
-            min-width: 100% !important;
-            overflow-x: auto !important;
-            overflow-y: visible !important;
+            overflow: hidden !important;
         }
 
         .st-key-comportamiento_historico div[data-testid="stVegaLiteChart"] > div {
+            max-width: 100% !important;
             width: 100% !important;
-            min-width: 100% !important;
-            overflow-x: auto !important;
-            overflow-y: visible !important;
+            overflow: hidden !important;
         }
 
         .st-key-comportamiento_historico canvas,
         .st-key-comportamiento_historico svg {
-            max-width: none !important;
+            max-width: 100% !important;
+            width: 100% !important;
             overflow: visible !important;
         }
 
@@ -459,6 +463,40 @@ st.markdown(
 
         div[data-testid="stExpander"] div {
             background-color: transparent !important;
+        }
+
+        /* Ajustar ancho del selectbox dentro de comportamiento histórico */
+        .st-key-comportamiento_historico div[data-testid="stSelectbox"] {
+            width: 100% !important;
+            max-width: 100% !important;
+            box-sizing: border-box !important;
+            overflow: hidden !important;
+        }
+
+        .st-key-comportamiento_historico div[data-testid="stSelectbox"] > div {
+            width: 100% !important;
+            max-width: 100% !important;
+            box-sizing: border-box !important;
+            overflow: hidden !important;
+        }
+
+        .st-key-comportamiento_historico div[data-baseweb="select"] {
+            width: 100% !important;
+            max-width: 100% !important;
+            box-sizing: border-box !important;
+        }
+
+        .st-key-comportamiento_historico div[data-baseweb="select"] > div {
+            width: 100% !important;
+            max-width: 100% !important;
+            box-sizing: border-box !important;
+        }
+
+        .st-key-comportamiento_historico div[data-baseweb="select"] span {
+            max-width: calc(100% - 28px) !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            white-space: nowrap !important;
         }
     </style>
     """,
@@ -1085,10 +1123,12 @@ with col_hist:
             eje_x = alt.X(
                 "Año:O",
                 title=None,
+                scale=alt.Scale(paddingOuter=0.45),
                 axis=alt.Axis(
                     labelAngle=-45,
                     labelOverlap=False,
-                    labelLimit=80
+                    labelLimit=80,
+                    labelFlush=False
                 )
             )
 
@@ -1097,7 +1137,7 @@ with col_hist:
                 strokeWidth=4
             ).encode(
                 x=eje_x,
-                y=alt.Y("Valor:Q", title="Rendimiento (%)"),
+                y=alt.Y("Valor:Q",title="Rendimiento (%)", scale=alt.Scale(zero=False)),
                 color=alt.Color(
                     "Serie:N",
                     scale=alt.Scale(
@@ -1148,9 +1188,18 @@ with col_hist:
             chart_variable = (
                 chart_lineas + punto_prediccion
             ).properties(
-                width="container",
-                height=380,
-                background="#ffffff"
+                height=300,
+                background="#ffffff",
+                padding={
+                    "left": 25,
+                    "right": 55,
+                    "top": 20,
+                    "bottom": 35
+                },
+                autosize=alt.AutoSizeParams(
+                    type="fit",
+                    contains="padding"
+                )
             ).configure_view(
                 fill="#ffffff",
                 stroke="#eceff1"
@@ -1211,10 +1260,12 @@ with col_hist:
             eje_x = alt.X(
                 "Año:O",
                 title=None,
+                scale=alt.Scale(paddingOuter=0.45),
                 axis=alt.Axis(
                     labelAngle=-45,
                     labelOverlap=False,
-                    labelLimit=80
+                    labelLimit=80,
+                    labelFlush=False
                 )
             )
 
@@ -1223,7 +1274,11 @@ with col_hist:
                 strokeWidth=4
             ).encode(
                 x=eje_x,
-                y=alt.Y("Valor:Q", title=titulo_variable),
+                y=alt.Y(
+                    "Valor:Q",
+                    title=titulo_variable,
+                    scale=alt.Scale(zero=False)
+                ),
                 color=alt.Color(
                     "Serie:N",
                     scale=alt.Scale(
@@ -1243,9 +1298,18 @@ with col_hist:
                     alt.Tooltip("Valor:Q", title="Valor", format=".2f")
                 ]
             ).properties(
-                width="container",
-                height=380,
-                background="#ffffff"
+                height=300,
+                background="#ffffff",
+                padding={
+                    "left": 25,
+                    "right": 55,
+                    "top": 20,
+                    "bottom": 35
+                },
+                autosize=alt.AutoSizeParams(
+                    type="fit",
+                    contains="padding"
+                )
             ).configure_view(
                 fill="#ffffff",
                 stroke="#eceff1"
@@ -1258,7 +1322,6 @@ with col_hist:
             )
 
             st.altair_chart(chart_variable, use_container_width=True)
-
 
 with col_regla:
     with st.container(key="regla_activacion"):
