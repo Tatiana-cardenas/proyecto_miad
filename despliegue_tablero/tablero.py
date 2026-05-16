@@ -1117,14 +1117,23 @@ with col_hist:
                 ignore_index=True
             )
 
-            df_grafica["Año"] = df_grafica["Año"].astype(str)
-            df_prediccion["Año"] = df_prediccion["Año"].astype(str)
+            df_grafica["Año"] = df_grafica["Año"].astype(int)
+            df_prediccion["Año"] = df_prediccion["Año"].astype(int)
+
+            anio_min_graf = int(min(df_grafica["Año"].min(), df_prediccion["Año"].min()))
+            anio_max_graf = int(max(df_grafica["Año"].max(), df_prediccion["Año"].max()))
 
             eje_x = alt.X(
-                "Año:O",
+                "Año:Q",
                 title=None,
-                scale=alt.Scale(paddingOuter=0.45),
+                scale=alt.Scale(
+                    domain=[anio_min_graf - 0.5, anio_max_graf + 1.2],
+                    nice=False,
+                    zero=False
+                ),
                 axis=alt.Axis(
+                    values=list(range(anio_min_graf, anio_max_graf + 1)),
+                    format="d",
                     labelAngle=-45,
                     labelOverlap=False,
                     labelLimit=80,
@@ -1240,7 +1249,10 @@ with col_hist:
                 ignore_index=True
             )
 
-            df_grafica["Año"] = df_grafica["Año"].astype(str)
+            df_grafica["Año"] = df_grafica["Año"].astype(int)
+
+            anio_min_graf = int(df_grafica["Año"].min())
+            anio_max_graf = int(df_grafica["Año"].max())
 
             titulo_variable = variable_seleccionada
 
@@ -1258,10 +1270,16 @@ with col_hist:
                 titulo_variable = "Radiación solar acumulada anual"
 
             eje_x = alt.X(
-                "Año:O",
+                "Año:Q",
                 title=None,
-                scale=alt.Scale(paddingOuter=0.45),
+                scale=alt.Scale(
+                    domain=[anio_min_graf - 0.5, anio_max_graf + 0.8],
+                    nice=False,
+                    zero=False
+                ),
                 axis=alt.Axis(
+                    values=list(range(anio_min_graf, anio_max_graf + 1)),
+                    format="d",
                     labelAngle=-45,
                     labelOverlap=False,
                     labelLimit=80,
