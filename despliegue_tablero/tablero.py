@@ -148,6 +148,7 @@ st.markdown(
             padding: 22px 24px 18px 24px !important;
             margin-bottom: 22px !important;
             min-height: 560px !important;
+            overflow: hidden !important;
         }
 
         .st-key-comportamiento_historico div,
@@ -247,11 +248,6 @@ st.markdown(
             margin: 0;
         }
 
-        div[data-testid="stDataFrame"] {
-            border-radius: 14px;
-            overflow: hidden;
-        }
-
         .stSelectbox label,
         .stNumberInput label,
         .stSlider label {
@@ -264,12 +260,46 @@ st.markdown(
         div[data-baseweb="select"] > div {
             background-color: #ffffff !important;
             border: 1px solid #d7dde2 !important;
-            border-radius: 10px !important;
-            color: #000000 !important;
+            border-radius: 12px !important;
+            color: #111827 !important;
         }
 
-        div[data-baseweb="select"] * {
-            color: #000000 !important;
+        div[data-baseweb="select"] span,
+        div[data-baseweb="select"] input {
+            color: #111827 !important;
+        }
+
+        div[data-baseweb="select"] svg {
+            fill: #111827 !important;
+        }
+
+        div[data-baseweb="popover"] {
+            background-color: transparent !important;
+            z-index: 999999 !important;
+        }
+
+        ul[role="listbox"] {
+            background-color: #ffffff !important;
+            border: 1px solid #d7dde2 !important;
+            border-radius: 12px !important;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15) !important;
+            overflow: hidden !important;
+        }
+
+        ul[role="listbox"] li {
+            background-color: #ffffff !important;
+            color: #111827 !important;
+        }
+
+        ul[role="listbox"] li:hover {
+            background-color: #f3f4f6 !important;
+            color: #111827 !important;
+        }
+
+        ul[role="listbox"] li[aria-selected="true"] {
+            background-color: #f1f5f9 !important;
+            color: #111827 !important;
+            font-weight: 700 !important;
         }
 
         .stTextInput input,
@@ -334,6 +364,73 @@ st.markdown(
             background-color: #795548 !important;
             border: 2px solid #795548 !important;
             box-shadow: none !important;
+        }
+
+        .tabla-clara-wrapper {
+            width: 100%;
+            overflow-x: auto;
+            margin-top: 12px;
+            margin-bottom: 16px;
+        }
+
+        .tabla-clara {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: #ffffff !important;
+            color: #263238 !important;
+            border-radius: 14px;
+            overflow: hidden;
+            border: 1px solid #e0e0e0;
+            font-size: 13px;
+        }
+
+        .tabla-clara th {
+            background-color: #f5f7f9 !important;
+            color: #3e2723 !important;
+            font-weight: 700;
+            text-align: left;
+            padding: 12px 14px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .tabla-clara td {
+            background-color: #ffffff !important;
+            color: #263238 !important;
+            padding: 11px 14px;
+            border-bottom: 1px solid #eceff1;
+            vertical-align: top;
+        }
+
+        .tabla-clara tr:last-child td {
+            border-bottom: none;
+        }
+
+        .tabla-clara tr:hover td {
+            background-color: #fafafa !important;
+        }
+
+        .st-key-regla_activacion .tabla-clara-wrapper {
+            max-width: 100%;
+        }
+
+        div[data-testid="stExpander"] {
+            background-color: #ffffff !important;
+            border: 1px solid #e0e0e0 !important;
+            border-radius: 14px !important;
+            overflow: hidden !important;
+        }
+
+        div[data-testid="stExpander"] details {
+            background-color: #ffffff !important;
+        }
+
+        div[data-testid="stExpander"] summary {
+            color: #263238 !important;
+            background-color: #ffffff !important;
+        }
+
+        div[data-testid="stExpander"] div {
+            background-color: transparent !important;
         }
     </style>
     """,
@@ -562,6 +659,20 @@ def estilo_riesgo(nivel):
             "borde": "#e57373",
             "icono": "🔴"
         }
+
+
+def render_tabla_clara(df):
+    tabla_html = df.to_html(
+        index=False,
+        escape=False,
+        classes="tabla-clara"
+    )
+
+    return f"""
+    <div class="tabla-clara-wrapper">
+        {tabla_html}
+    </div>
+    """
 
 
 # 9. Filtros dentro del recuadro de parámetros
@@ -1144,10 +1255,9 @@ with col_regla:
             ]
         })
 
-        st.dataframe(
-            tabla_regla,
-            use_container_width=True,
-            hide_index=True
+        st.markdown(
+            render_tabla_clara(tabla_regla),
+            unsafe_allow_html=True
         )
 
         st.markdown(
@@ -1233,10 +1343,9 @@ with st.container(key="simulador_seguro"):
             ]
         })
 
-        st.dataframe(
-            stats_df,
-            use_container_width=True,
-            hide_index=True
+        st.markdown(
+            render_tabla_clara(stats_df),
+            unsafe_allow_html=True
         )
 
     with st.expander("🔍 Ver variables exactas usadas en la predicción"):
@@ -1259,10 +1368,11 @@ with st.container(key="simulador_seguro"):
                 "Valor usado": valor_mostrado
             })
 
-        st.dataframe(
-            pd.DataFrame(registros),
-            use_container_width=True,
-            hide_index=True
+        variables_df = pd.DataFrame(registros)
+
+        st.markdown(
+            render_tabla_clara(variables_df),
+            unsafe_allow_html=True
         )
 
 
