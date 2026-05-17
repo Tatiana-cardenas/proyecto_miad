@@ -813,9 +813,9 @@ with st.container(key="parametros_prediccion"):
         rendimiento_anterior_pct = st.number_input(
             "Rendimiento año anterior (%)",
             min_value=0.0,
-            max_value=100.0,
+            max_value=200.0,
             value=100.0,
-            step=0.5
+            step=5.0
         )
 
     rendimiento_lag1_manual = rendimiento_anterior_pct / 100
@@ -927,10 +927,6 @@ else:
     rend_estimado = rendimiento_lag1_manual
 
 rend_estimado = max(0.0, rend_estimado)
-
-if rend_estimado > 1:
-    rend_estimado = rend_estimado / 100
-
 
 # 14. Cálculo de activación
 
