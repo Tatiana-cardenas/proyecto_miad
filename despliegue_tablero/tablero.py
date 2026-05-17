@@ -1127,7 +1127,7 @@ with col_hist:
                 "Año:Q",
                 title=None,
                 scale=alt.Scale(
-                    domain=[anio_min_graf - 0.5, anio_max_graf + 1.2],
+                    domain=[anio_min_graf - 0.5, anio_max_graf + 2.0],
                     nice=False,
                     zero=False
                 ),
@@ -1170,7 +1170,8 @@ with col_hist:
             punto_prediccion = alt.Chart(df_prediccion).mark_point(
                 size=180,
                 shape="diamond",
-                filled=True
+                filled=True,
+                clip=False
             ).encode(
                 x=eje_x,
                 y=alt.Y("Valor:Q"),
@@ -1201,7 +1202,7 @@ with col_hist:
                 background="#ffffff",
                 padding={
                     "left": 25,
-                    "right": 55,
+                    "right": 80,
                     "top": 20,
                     "bottom": 35
                 },
@@ -1273,7 +1274,7 @@ with col_hist:
                 "Año:Q",
                 title=None,
                 scale=alt.Scale(
-                    domain=[anio_min_graf - 0.5, anio_max_graf + 0.8],
+                    domain=[anio_min_graf - 0.5, anio_max_graf + 2.0],
                     nice=False,
                     zero=False
                 ),
@@ -1320,7 +1321,7 @@ with col_hist:
                 background="#ffffff",
                 padding={
                     "left": 25,
-                    "right": 55,
+                    "right": 80,
                     "top": 20,
                     "bottom": 35
                 },
