@@ -1513,7 +1513,7 @@ st.markdown(
         <p>
             Este tablero permite evaluar el riesgo agroclimático asociado a la producción de café
             en municipios de Cundinamarca y Nariño mediante un
-            <strong>modelo predictivo LASSO</strong>. A partir de la selección del departamento,
+            <strong>modelo predictivo Ridge</strong>. A partir de la selección del departamento,
             municipio, año de análisis, rendimiento del año anterior, valor asegurado y porcentaje
             de trigger, la herramienta estima el rendimiento esperado del cultivo y lo compara con
             el rendimiento histórico municipal.
