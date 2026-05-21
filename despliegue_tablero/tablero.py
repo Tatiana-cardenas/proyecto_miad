@@ -1,6 +1,6 @@
 """
 Tablero Seguro Agrícola Indexado producción de Café
-Modelo LASSO — Nariño y Cundinamarca
+Modelo Ridge — Nariño y Cundinamarca
 
 Requiere:
 - data/base_narino_cundinamarca.csv
